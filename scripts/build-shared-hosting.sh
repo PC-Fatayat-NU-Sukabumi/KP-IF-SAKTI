@@ -29,14 +29,23 @@ echo "==> 2/4 Bersihkan asset lama di public/"
 rm -rf "$PUBLIC_DIR/assets"
 rm -f "$PUBLIC_DIR/spa.html"
 
-echo "==> 3/4 Salin hasil build ke backend/public"
+echo "==> 3/5 Salin hasil build ke backend/public"
 cp -R "$FRONTEND_DIR/dist/assets" "$PUBLIC_DIR/assets"
 cp "$FRONTEND_DIR/dist/index.html" "$PUBLIC_DIR/spa.html"
 # Salin file statis di root dist (favicon, dll) kecuali index.html
 find "$FRONTEND_DIR/dist" -maxdepth 1 -type f ! -name 'index.html' \
   -exec cp {} "$PUBLIC_DIR/" \;
 
-echo "==> 4/4 Selesai."
+echo "==> 4/5 Build aset Vite backend (Admin Dashboard)"
+cd "$ROOT_DIR/backend"
+if [ -f package-lock.json ]; then
+  npm ci
+else
+  npm install
+fi
+npm run build
+
+echo "==> 5/5 Selesai."
 echo ""
 echo "Berikutnya di server (dari folder backend):"
 echo "  composer install --no-dev --optimize-autoloader"

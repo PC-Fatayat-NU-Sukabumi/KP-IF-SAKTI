@@ -1,0 +1,32 @@
+# =============================================================================
+# Root .htaccess untuk Shared Hosting (Hostinger public_html)
+# -----------------------------------------------------------------------------
+# Mengarahkan seluruh trafik ke backend/public/ tanpa mengekspos file sensitif
+# seperti .env, .git, backend/app, frontend, atau scripts.
+# =============================================================================
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Blokir akses langsung ke file/folder tersembunyi (.env, .git, .htaccess, dll)
+    RewriteRule (^|/)\. - [F,L]
+
+    # Blokir akses langsung ke folder sumber & konfigurasi internal
+    RewriteRule ^(backend/(app|bootstrap|config|database|resources|routes|storage|tests|vendor)|frontend|scripts|docs|docker)/ - [F,L]
+
+    # Arahkan semua request lain ke backend/public/
+    RewriteCond %{REQUEST_URI} !^/backend/public/
+    RewriteRule ^(.*)$ backend/public/$1 [L]
+</IfModule>
+
+<FilesMatch "(\.(env|git|gitignore|gitattributes|lock|md|yml|yaml|sh|py|sql|sqlite|sqlite3)|composer\.json|package\.json|Dockerfile)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

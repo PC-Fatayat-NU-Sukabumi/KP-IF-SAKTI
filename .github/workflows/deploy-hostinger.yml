@@ -1,0 +1,90 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [production]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy ke Hostinger Shared Hosting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, gd, zip
+          coverage: none
+
+      - name: Build Frontend SPA & Rakit ke backend/public
+        run: bash scripts/build-shared-hosting.sh
+
+      - name: Install Composer Dependencies (Production)
+        working-directory: backend
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Setup SSH Key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+          HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT || '65002' }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_hostinger
+          chmod 600 ~/.ssh/id_hostinger
+          ssh-keyscan -p "$HOSTINGER_PORT" -H "$HOSTINGER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy Files via Rsync
+        env:
+          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+          HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT || '65002' }}
+          HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
+          HOSTINGER_DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
+        run: |
+          SSH_CMD="ssh -i ~/.ssh/id_hostinger -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=yes"
+
+          rsync -avz -e "$SSH_CMD" .htaccess "${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_DEPLOY_PATH}/.htaccess"
+
+          rsync -avz --delete -e "$SSH_CMD" \
+            --exclude='.env' \
+            --exclude='.env.backup' \
+            --exclude='.env.production' \
+            --exclude='.git*' \
+            --exclude='.phpunit*' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='storage/' \
+            --exclude='public/storage' \
+            --exclude='public/hot' \
+            backend/ "${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_DEPLOY_PATH}/backend/"
+
+      - name: Run Post-Deploy Artisan Commands
+        env:
+          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+          HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT || '65002' }}
+          HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
+          HOSTINGER_DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/id_hostinger -p "${HOSTINGER_PORT}" -o StrictHostKeyChecking=yes \
+            "${HOSTINGER_USER}@${HOSTINGER_HOST}" << EOF
+            set -e
+            cd "${HOSTINGER_DEPLOY_PATH}/backend"
+            mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+            chmod -R 755 storage bootstrap/cache
+            php artisan migrate --force
+            php artisan storage:link || true
+            php artisan optimize:clear
+            php artisan optimize
+          EOF

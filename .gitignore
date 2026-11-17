@@ -12,3 +12,4 @@ vendor
 *.log
 .vscode
 .idea
+dist-hostinger

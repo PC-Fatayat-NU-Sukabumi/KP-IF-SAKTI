@@ -317,6 +317,28 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| STORAGE FALLBACK (shared hosting tanpa symlink public/storage)
+|--------------------------------------------------------------------------
+| Jika symlink `public/storage` aktif, Apache/LiteSpeed melayani file
+| langsung sebelum menyentuh Laravel. Route ini menjadi fallback aman bila
+| fungsi symlink() dinonaktifkan di shared hosting.
+*/
+Route::get('/storage/{path}', function (string $path) {
+    $baseDir = realpath(storage_path('app/public'));
+    if ($baseDir === false) {
+        abort(404);
+    }
+
+    $fullPath = realpath($baseDir.DIRECTORY_SEPARATOR.$path);
+    if ($fullPath === false || ! str_starts_with($fullPath, $baseDir.DIRECTORY_SEPARATOR) || ! is_file($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath);
+})->where('path', '.*')->name('storage.fallback');
+
+/*
+|--------------------------------------------------------------------------
 | SPA FALLBACK (deep-link / refresh pada halaman React yang tak terdaftar)
 |--------------------------------------------------------------------------
 | Semua GET yang tidak cocok route di atas dan bukan /api atau /storage

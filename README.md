@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌿 KP-IF-SAKTI
+# KP-IF-SAKTI
 ### Sistem Informasi PC Fatayat NU Kabupaten Sukabumi
 
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=flat-square&logo=laravel&logoColor=white)](https://laravel.com)
@@ -19,7 +19,7 @@
 
 ---
 
-## 🚀 Quick Start (Docker)
+## Quick Start (Docker)
 
 Cara tercepat menjalankan aplikasi secara lokal dengan Docker Compose:
 

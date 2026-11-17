@@ -5,9 +5,59 @@ on:
     branches: [production]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-hostinger-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  test:
+    name: Pre-Deploy Checks (Tests & Lint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, mbstring, exif, pcntl, bcmath, gd, zip
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Composer & Build Backend Assets
+        working-directory: backend
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          npm ci && npm run build
+
+      - name: Prepare Test Environment
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=sqlite/' .env
+          sed -i 's/SESSION_DRIVER=database/SESSION_DRIVER=array/' .env
+          sed -i 's/CACHE_STORE=database/CACHE_STORE=array/' .env
+          sed -i 's/QUEUE_CONNECTION=database/QUEUE_CONNECTION=sync/' .env
+          touch database/database.sqlite
+          php artisan key:generate
+          php artisan migrate --force
+
+      - name: Run Tests & Code Style
+        working-directory: backend
+        run: |
+          php artisan test
+          vendor/bin/pint --test
+
   deploy:
     name: Build & Deploy ke Hostinger Shared Hosting
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
@@ -19,16 +69,18 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, gd, zip
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, pdo_sqlite, gd, zip
           coverage: none
 
-      - name: Build Frontend SPA & Rakit ke backend/public
+      - name: Build Frontend & Backend Vite Assets
         run: bash scripts/build-shared-hosting.sh
 
       - name: Install Composer Dependencies (Production)
@@ -40,7 +92,15 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
           HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
           HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT || '65002' }}
+          HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
+          HOSTINGER_DEPLOY_PATH: ${{ secrets.HOSTINGER_DEPLOY_PATH }}
         run: |
+          for var in SSH_PRIVATE_KEY HOSTINGER_HOST HOSTINGER_USER HOSTINGER_DEPLOY_PATH; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Secret $var belum diisi di GitHub Repository Settings -> Secrets -> Actions."
+              exit 1
+            fi
+          done
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_hostinger
           chmod 600 ~/.ssh/id_hostinger
@@ -83,8 +143,16 @@ jobs:
             cd "${HOSTINGER_DEPLOY_PATH}/backend"
             mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
             chmod -R 755 storage bootstrap/cache
-            php artisan migrate --force
-            php artisan storage:link || true
-            php artisan optimize:clear
-            php artisan optimize
+            ln -sfn ../storage/app/public public/storage
+            if [ -f .env ]; then
+              php artisan migrate --force
+              php artisan optimize:clear
+              php artisan optimize
+            else
+              echo "WARNING: backend/.env belum ada di server; lewati migrate & optimize."
+            fi
           EOF
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/id_hostinger

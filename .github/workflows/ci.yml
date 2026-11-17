@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, production]
   pull_request:
-    branches: [main]
+    branches: [main, production]
 
 jobs:
   backend:
@@ -24,6 +24,17 @@ jobs:
       - name: Install Composer Dependencies
         working-directory: backend
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Setup Node.js & Build Backend Assets
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Build Backend Vite Assets
+        working-directory: backend
+        run: npm ci && npm run build
 
       - name: Prepare Environment
         working-directory: backend

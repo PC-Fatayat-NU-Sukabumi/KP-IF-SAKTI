@@ -13,7 +13,7 @@
   Sistem informasi manajemen data organisasi, pemetaan wilayah Pimpinan Anak Cabang (PAC), agenda kegiatan, dan administrasi keanggotaan <strong>PC Fatayat NU Kabupaten Sukabumi</strong>.
 </p>
 
-> 🎓 *Proyek Kerja Praktik (KP) Program Studi Teknik Informatika — **Informatika SAKTI (IF SAKTI)**.*
+> *Proyek Kerja Praktik (KP) Program Studi Teknik Informatika — **Informatika SAKTI (IF SAKTI)**.*
 
 </div>
 
@@ -25,7 +25,7 @@ Cara tercepat menjalankan aplikasi secara lokal dengan Docker Compose:
 
 ```bash
 # 1. Clone repositori
-git clone https://github.com/ikhsanhazamy/KP-IF-SAKTI.git
+git clone https://github.com/PC-Fatayat-NU-Sukabumi/KP-IF-SAKTI.git
 cd KP-IF-SAKTI
 
 # 2. Siapkan konfigurasi environment backend
@@ -36,22 +36,22 @@ docker compose up --build
 ```
 
 Akses aplikasi di browser:
-* 🌐 **Website Publik**: [http://localhost:5173](http://localhost:5173)
-* 🔐 **Admin Dashboard**: [http://localhost:8000](http://localhost:8000) *(Login: `admin@fatayatnu.or.id` / `password`)*
+* **Website Publik**: [http://localhost:5173](http://localhost:5173)
+* **Admin Dashboard**: [http://localhost:8000](http://localhost:8000) *(Login: `admin@fatayatnu.or.id` / `password`)*
 
-> 💡 *Untuk panduan setup manual di komputer host tanpa Docker, silakan baca **[Panduan Development](docs/DEVELOPMENT_GUIDE.md)**.*
-
----
-
-## ✨ Fitur Utama
-
-* **🌐 Website Publik (React SPA)**: Landing page profil, direktori agenda kegiatan dengan filter kategori, peta interaktif sebaran 47 PAC (MapLibre GL), dan formulir pengajuan pembentukan PAC baru.
-* **🛡️ Dashboard Admin (Laravel)**: Manajemen data PAC, biodata anggota/kader, publikasi agenda kegiatan, pusat ekspor laporan (PDF, Excel, CSV), serta backup/restore database (MySQL & SQLite).
-* **⚡ Integrasi Eksternal**: Webhook Google Apps Script untuk sinkronisasi asinkron data form PAC ke Google Sheets.
+> *Untuk panduan setup manual di komputer host tanpa Docker, silakan baca **[Panduan Development](docs/DEVELOPMENT_GUIDE.md)**.*
 
 ---
 
-## 🛠️ Tech Stack
+## Fitur Utama
+
+* **Website Publik (React SPA)**: Landing page profil, direktori agenda kegiatan dengan filter kategori, peta interaktif sebaran 47 PAC (MapLibre GL), dan formulir pengajuan pembentukan PAC baru.
+* **Dashboard Admin (Laravel)**: Manajemen data PAC, biodata anggota/kader, publikasi agenda kegiatan, pusat ekspor laporan (PDF, Excel, CSV), serta backup/restore database (MySQL & SQLite).
+* **Integrasi Eksternal**: Webhook Google Apps Script untuk sinkronisasi asinkron data form PAC ke Google Sheets.
+
+---
+
+## Tech Stack
 
 * **Frontend**: React 18, Vite 5, Tailwind CSS 4, shadcn/ui, MapLibre GL
 * **Backend**: Laravel 12 (PHP 8.2), Blade Templates, DomPDF
@@ -60,21 +60,22 @@ Akses aplikasi di browser:
 
 ---
 
-## 📚 Dokumentasi Teknis
+## Dokumentasi Teknis
 
 Dokumentasi arsitektur, deployment, dan spesifikasi teknis lengkap tersedia di folder [`docs/`](docs/) & [`scripts/`](scripts/):
 
-* 🚀 **[Panduan Deployment Server VPS](docs/DEPLOYMENT_GUIDE.md)** — Panduan rilis produksi VPS Ubuntu Linux, Nginx reverse proxy, SSL Let's Encrypt, dan backup harian.
-* ⚡ **[VPS Command Cheatsheet](docs/VPS_CHEATSHEET.md)** — Kumpulan perintah cepat monitoring, log, tinker, artisan, dan pemeliharaan VPS.
-* 🛠️ **[Skrip Otomasi Deployment](scripts/)** — Skrip otomatisasi `setup-vps.sh`, `deploy.sh`, `backup.sh`, dan `restore.sh`.
-* 🌐 **[Dokumentasi REST API](docs/API_DOCUMENTATION.md)** — Spesifikasi endpoint `/api/*`, format JSON, query parameter, dan rate limiting.
-* 🗄️ **[Skema Basis Data & ERD](docs/DATABASE_SCHEMA.md)** — Diagram relasi entitas (ERD) dan kamus data tabel.
-* 🏛️ **[Arsitektur Sistem](docs/ARCHITECTURE.md)** — Desain arsitektur hybrid dan alur sequence pengajuan form.
-* 💻 **[Panduan Development & Debugging](docs/DEVELOPMENT_GUIDE.md)** — Setup host lokal, testing PHPUnit, dan troubleshooting.
+* **[Panduan Deployment Shared Hosting Hostinger](docs/HOSTINGER_DEPLOYMENT.md)** — Panduan deploy ke Hostinger (hPanel), auto-deploy GitHub Actions, dan konfigurasi shared hosting.
+* **[Panduan Deployment Server VPS](docs/DEPLOYMENT_GUIDE.md)** — Panduan rilis produksi VPS Ubuntu Linux, Nginx reverse proxy, SSL Let's Encrypt, dan backup harian.
+* **[VPS Command Cheatsheet](docs/VPS_CHEATSHEET.md)** — Kumpulan perintah cepat monitoring, log, tinker, artisan, dan pemeliharaan VPS.
+* **[Skrip Otomasi Deployment](scripts/)** — Skrip otomatisasi `build-shared-hosting.sh`, `package-hostinger.sh`, `setup-vps.sh`, `deploy.sh`, `backup.sh`, dan `restore.sh`.
+* **[Dokumentasi REST API](docs/API_DOCUMENTATION.md)** — Spesifikasi endpoint `/api/*`, format JSON, query parameter, dan rate limiting.
+* **[Skema Basis Data & ERD](docs/DATABASE_SCHEMA.md)** — Diagram relasi entitas (ERD) dan kamus data tabel.
+* **[Arsitektur Sistem](docs/ARCHITECTURE.md)** — Desain arsitektur hybrid dan alur sequence pengajuan form.
+* **[Panduan Development & Debugging](docs/DEVELOPMENT_GUIDE.md)** — Setup host lokal, testing PHPUnit, dan troubleshooting.
 
 ---
 
-## 👥 Tim Pengembang
+## Tim Pengembang
 
 <div align="center">
 
@@ -86,10 +87,10 @@ Dokumentasi arsitektur, deployment, dan spesifikasi teknis lengkap tersedia di f
 
 </div>
 
-> 🤝 *Profil lengkap dan panduan alur kontribusi dapat dibaca pada **[CONTRIBUTORS.md](CONTRIBUTORS.md)** dan **[CONTRIBUTING.md](CONTRIBUTING.md)**.*
+> *Profil lengkap dan panduan alur kontribusi dapat dibaca pada **[CONTRIBUTORS.md](CONTRIBUTORS.md)** dan **[CONTRIBUTING.md](CONTRIBUTING.md)**.*
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 Proyek ini dilisensikan di bawah **[MIT License](LICENSE)** © 2026 Tim Kerja Praktik IF SAKTI & Kontributor KP-IF-SAKTI.

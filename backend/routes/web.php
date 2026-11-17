@@ -18,10 +18,60 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::view('/', 'login');
+/*
+|--------------------------------------------------------------------------
+| SPA SERVING HELPERS (shared hosting: Laravel menyajikan React build)
+|--------------------------------------------------------------------------
+| Prioritas: build yang sudah disalin ke public/spa.html (shared hosting),
+| lalu fallback ke layout Docker/VPS.
+*/
+$findSpa = static function (): ?string {
+    foreach ([
+        public_path('spa.html'),
+        '/var/www/frontend/index.html',
+        base_path('../frontend/dist/index.html'),
+        public_path('../../frontend/dist/index.html'),
+    ] as $path) {
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+
+    return null;
+};
+
+$serveSpa = static function () use ($findSpa) {
+    if ($path = $findSpa()) {
+        return response()->file($path);
+    }
+
+    abort(404);
+};
+
+Route::get('/', function () use ($findSpa) {
+    if (auth()->check()) {
+        return redirect('/dashboard');
+    }
+
+    if ($path = $findSpa()) {
+        return response()->file($path);
+    }
+
+    return view('login');
+})->name('home');
 
 Route::view('/login', 'login')
     ->name('login');
+
+/*
+|--------------------------------------------------------------------------
+| HALAMAN PUBLIK SPA (React Router) — dilayani Laravel di satu domain
+|--------------------------------------------------------------------------
+*/
+Route::get('/tentang', $serveSpa);
+Route::get('/tentang/struktur-organisasi', $serveSpa);
+Route::get('/struktur-organisasi', $serveSpa);
+Route::get('/pengajuan-data-pac', $serveSpa);
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:login');
@@ -50,7 +100,7 @@ Route::get('/csrf-token', fn () => response()->json([
 |--------------------------------------------------------------------------
 */
 
-Route::get('/kegiatan', function (Request $request) {
+Route::get('/kegiatan', function (Request $request) use ($findSpa) {
     if (auth()->check()) {
         $user = auth()->user();
         if ($user && $user->two_factor_enabled && ! $request->session()->get('two_factor_verified', false)) {
@@ -60,22 +110,14 @@ Route::get('/kegiatan', function (Request $request) {
         return app(KegiatanController::class)->index($request);
     }
 
-    $spaCandidates = [
-        '/var/www/frontend/index.html',
-        base_path('../frontend/dist/index.html'),
-        public_path('../../frontend/dist/index.html'),
-    ];
-
-    foreach ($spaCandidates as $path) {
-        if (file_exists($path)) {
-            return response()->file($path);
-        }
+    if ($path = $findSpa()) {
+        return response()->file($path);
     }
 
     return app(KegiatanController::class)->index($request);
 })->name('kegiatan.index');
 
-Route::get('/kegiatan/{id}', function (Request $request, $id) {
+Route::get('/kegiatan/{id}', function (Request $request, $id) use ($findSpa) {
     if ($request->wantsJson() || $request->ajax()) {
         return app(KegiatanController::class)->show((int) $id);
     }
@@ -84,16 +126,8 @@ Route::get('/kegiatan/{id}', function (Request $request, $id) {
         return app(KegiatanController::class)->show((int) $id);
     }
 
-    $spaCandidates = [
-        '/var/www/frontend/index.html',
-        base_path('../frontend/dist/index.html'),
-        public_path('../../frontend/dist/index.html'),
-    ];
-
-    foreach ($spaCandidates as $path) {
-        if (file_exists($path)) {
-            return response()->file($path);
-        }
+    if ($path = $findSpa()) {
+        return response()->file($path);
     }
 
     return app(KegiatanController::class)->show((int) $id);
@@ -279,4 +313,24 @@ Route::middleware(['auth', '2fa'])->group(function () {
         ->middleware('role:super_admin')
         ->name('restore.database');
 
+});
+
+/*
+|--------------------------------------------------------------------------
+| SPA FALLBACK (deep-link / refresh pada halaman React yang tak terdaftar)
+|--------------------------------------------------------------------------
+| Semua GET yang tidak cocok route di atas dan bukan /api atau /storage
+| dikembalikan ke index.html SPA supaya React Router menanganinya
+| (termasuk halaman NotFound milik SPA).
+*/
+Route::fallback(function (Request $request) use ($findSpa) {
+    if ($request->is('api/*') || $request->is('storage/*')) {
+        abort(404);
+    }
+
+    if ($path = $findSpa()) {
+        return response()->file($path);
+    }
+
+    abort(404);
 });
